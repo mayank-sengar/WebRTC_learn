@@ -21,19 +21,19 @@ wss.on('connection' , (ws) => {
         //create answer 
         // add ice candidate :as , GPT: But SDP does NOT contain the actual IP addresses and ports where each peer can be reached.
 
-        if(message.type === "identify-as-sender"){
+        if(message.type === "sender"){
             senderSocket = ws;
         }
-        else if(message.type === "identify-as-reciever"){
+        else if(message.type === "reciever"){
             receiverSocket = ws;
         }
-        else if(message.type === "create-offer"){
+        else if(message.type === "createOffer"){
             //if it is null then 
             if(!senderSocket) return;
 
             receiverSocket?.send(JSON.stringify({type: "offer" , sdp : message.sdp}) );
         }
-        else if(message.type === "create-answer"){
+        else if(message.type === "createAnswer"){
              if(!receiverSocket) return;
             senderSocket?.send(JSON.stringify({type: "offer" , sdp : message.sdp}) );
         }
