@@ -13,12 +13,25 @@ const Receiver = () => {
 
     socket.onmessage = async (event) => {
       const message = JSON.parse(event.data);
+      let pc : RTCPeerConnection | null = null;
       //5 Browser 2 receives the offer from the signaling server
       if(message.type === 'createOffer'){
       
-        const pc = new RTCPeerConnection();
+         pc = new RTCPeerConnection();
         //6 Browser 2 sets the remote description to the offer
-        pc.setRemoteDescription(message.sdp);
+        await pc.setRemoteDescription(
+        new RTCSessionDescription(message.sdp)
+        );
+
+      pc.onicecandidate = (event) => {
+          socket?.send(JSON.stringify({type: 'iceCandidate' ,candidate : event.candidate}));
+           console.log(event);
+      }
+
+      pc.ontrack = (track) => {
+        console.log(track);
+      }
+
         //7 Browser 2 creates an answer
         const answer = await pc.createAnswer();
         //8 Browser 2 sets the local description to be the answer
@@ -27,8 +40,15 @@ const Receiver = () => {
 
         //9 Browser 2 sends the answer to the other side through the signaling serve
         socket.send(JSON.stringify({type : 'createAnswer', sdp : pc.localDescription}));
+
+        
         
       
+      }
+      else if(message.type == "iceCandidate"){
+        
+        pc.addIceCandidate()
+        socket?.send(JSON.stringify({type: 'iceCandidate' ,candidate : message.candidate}))
       }
 
       

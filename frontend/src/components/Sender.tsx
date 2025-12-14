@@ -18,15 +18,26 @@ const Sender = () => {
     if(!socket) return;
       // RTCPeerConnection - highlevel api ,generates offer and ans
     //1 Browser 1 creates an RTCPeerConnection
-      const pc = new RTCPeerConnection();
+      const pc = new RTCPeerConnection(); // using a default google stun server 
+
+      //bcz after sending the video and audio SDPs are updated and for that it is needed to send them again
+       pc.onnegotiationneeded = async () =>{
       //2 Browser 1 creates an offer
       const offer = await pc.createOffer();//sdp
-
       //3 browser 1 sets the local description to the offer
       await pc.setLocalDescription(offer);
-
       //4 Browser 1 sends the offer to the other side through the signaling server
       socket?.send(JSON.stringify({type: 'createOffer', sdp: pc.localDescription}));
+      console.log("onnegotiation needed")
+      }
+
+      //adding the iceCandidates whenever we get them
+      pc.onicecandidate = (event) => {
+          socket?.send(JSON.stringify({type: 'iceCandidate' ,candidate : event.candidate}));
+           console.log(event);
+      }
+
+      
       
 
       //10 Browser 1 receives the answer and sets the remote description
@@ -36,7 +47,16 @@ const Sender = () => {
         if(data.type == "createAnswer"){
           pc.setRemoteDescription(data.sdp);
         }
+        //trickle ice
+        else if(data.type == "iceCandidate"){
+          pc.addIceCandidate(data.candidate)
+        }
       }
+
+      //after all the webrtc logic 
+      const stream = await navigator.mediaDevices.getUserMedia({video: true, audio : true});
+      pc.addTrack(stream.getVideoTracks()[0]);
+      //(trigger pc.onnegotationneeded)
 
 
   }

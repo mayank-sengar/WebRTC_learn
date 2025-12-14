@@ -14,7 +14,8 @@ wss.on('connection' , (ws) => {
     ws.on('error', console.error);
 
     ws.on('message',(data:any)=>{
-        const message = JSON.parse(data)
+        // incoming data can be a Buffer; parse after converting to string
+        const message = JSON.parse(data.toString())
         //identify as sender
         //identify as reciever
         //create offer
@@ -22,20 +23,25 @@ wss.on('connection' , (ws) => {
         // add ice candidate :as , GPT: But SDP does NOT contain the actual IP addresses and ports where each peer can be reached.
 
         if(message.type === "sender"){
+           
             senderSocket = ws;
+             console.log("sender set")
         }
-        else if(message.type === "reciever"){
+        else if(message.type === "receiver"){
             receiverSocket = ws;
+             console.log("receiver set")
         }
         else if(message.type === "createOffer"){
             //if it is null then 
             if(!senderSocket) return;
 
-            receiverSocket?.send(JSON.stringify({type: "offer" , sdp : message.sdp}) );
+            receiverSocket?.send(JSON.stringify({type: "createOffer" , sdp : message.sdp}) );
+            console.log("offer forwarded to receiver")
         }
         else if(message.type === "createAnswer"){
              if(!receiverSocket) return;
-            senderSocket?.send(JSON.stringify({type: "offer" , sdp : message.sdp}) );
+            senderSocket?.send(JSON.stringify({type: "createAnswer" , sdp : message.sdp}) );
+             console.log("answer forwarded to sender")
         }
          else if (message.type === 'iceCandidate') {
 
@@ -45,14 +51,12 @@ wss.on('connection' , (ws) => {
              else if (ws === receiverSocket) {
             senderSocket?.send(JSON.stringify({ type: 'iceCandidate', candidate: message.candidate }));
             }
+            console.log("ice candidate sent ")
          }
         
 
       
 
     });
-
-
-    ws.send('something');
 })
 
